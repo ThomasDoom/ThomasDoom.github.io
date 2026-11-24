@@ -1,0 +1,18 @@
+// Cited sources. Numbers are assigned in order of first appearance on the page.
+window.REFS = {
+  usajobs: ["NASA. (2026, February 20). Aerospace engineer, AST, aerospace flight systems (Direct hire) [Job announcement, Crew and Thermal Systems Division, Johnson Space Center]. USAJOBS.", "Bachelor's in engineering from an ABET-accredited school; duties include trades, life support and suit testing.", "https://www.usajobs.gov/job/858218200"],
+  onet: ["National Center for O*NET Development. (n.d.). Aerospace engineers (17-2011.00). O*NET OnLine. Retrieved November 23, 2026.", "Job Zone 4: most roles need a bachelor's degree. Growth much faster than average.", "https://www.onetonline.org/link/summary/17-2011.00"],
+  lspace: ["L’SPACE Program. (n.d.). Mission Concept Academy. Arizona State University. Retrieved November 23, 2026.", "NASA-funded academy where student teams follow the NASA mission life cycle.", "https://www.lspace.asu.edu/mission-concept-academy"],
+  moonbase: ["NASA. (2026, October 20). Moon Base.", "NASA’s plan for a base near the lunar South Pole, with surface power and autonomous robots.", "https://www.nasa.gov/moonbase/"],
+  fsp: ["NASA. (n.d.). Fission surface power. Retrieved November 23, 2026.", "Power for crews regardless of location, weather or available sunlight.", "https://www.nasa.gov/exploration-systems-development-mission-directorate/fission-surface-power/"],
+  viper: ["NASA. (n.d.). VIPER. NASA Science. Retrieved November 23, 2026.", "Rover designed to drive into permanently shadowed lunar craters.", "https://science.nasa.gov/mission/viper/"],
+  astrobee: ["NASA. (n.d.). Astrobee. Retrieved November 23, 2026.", "Free-flying robots that work autonomously on the space station.", "https://www.nasa.gov/astrobee/"],
+  oh1: ["Castaneda, M., & Albert, J. (2026, October 28). NCAS Student Challenge Office Hour #1 [Virtual presentation]. NASA Community College Aerospace Scholars.", "Two JSC engineers who went from community college through NCAS and Pathways to NASA.", ""],
+  issqa: ["Learn With NASA. (2026, August 10). Astronaut Q&A with NASA Community College Aerospace Scholars [Video]. YouTube.", "Astronauts aboard the space station answer NCAS students’ questions.", "https://www.youtube.com/watch?v=cFq7o0Mrmc0"],
+  oh2: ["Wheeler, S., & Evans, S. (2026, November 18). NCAS Student Challenge Office Hour #2: NASA internships [Virtual presentation]. NASA Community College Aerospace Scholars.", "OSTEM and MUREP internship eligibility, how to apply, and an Ames intern's lunar rover work.", ""],
+  values: ["NASA. (n.d.). Life at NASA. Retrieved November 24, 2026.", "NASA's core values: safety, integrity, inclusion, teamwork, excellence.", "https://www.nasa.gov/careers/life-at-nasa/"],
+  hiseas: ["Bender, M. (2026, June 2). NASA funds may bring more missions to Mars, on Maunaloa. Hawai\u02bbi Public Radio.", "NASA funding to resume HI-SEAS analog missions on Mauna Loa after a hiatus of several years.", "https://www.hawaiipublicradio.org/the-conversation/2026-06-02/nasa-funds-may-bring-more-missions-to-mars-on-maunaloa"],
+  ostem: ["NASA. (n.d.). Internship programs. Retrieved November 1, 2026.", "NASA OSTEM paid internships for students.", "https://www.nasa.gov/learning-resources/internship-programs/"],
+  pathways: ["NASA. (n.d.). Pathways programs. Retrieved November 1, 2026.", "Paid internships that can convert to a full-time NASA job.", "https://www.nasa.gov/careers/pathways/"],
+  astro: ["NASA. (n.d.). Astronaut requirements. Retrieved November 23, 2026.", "U.S. citizen, STEM master's degree, two years of professional experience, and the long-duration flight physical.", "https://www.nasa.gov/humans-in-space/astronauts/astronaut-requirements/"]
+};
