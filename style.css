@@ -228,7 +228,7 @@ html.board-on .blur{visibility:hidden;transition:opacity .4s ease,visibility 0s 
 
 /* ---- Section system (after the Gridfolio reference): sticky label left, large heading and content right ---- */
 /* the header keeps its height when it turns solid, so nothing below it shifts while scrolling */
-.top{position:sticky;top:0;z-index:20;transition:background .3s,box-shadow .3s}
+.top{position:sticky;top:0;z-index:20;transition:background .3s,box-shadow .3s,transform .3s ease}
 .top.scrolled{background:rgba(255,255,255,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 0 rgba(62,127,122,.12)}
 .sec{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,9fr);gap:var(--gap);padding-block:clamp(80px,10vw,150px) 0}
 .sec-label{position:sticky;top:96px;z-index:3;align-self:start;display:flex;align-items:center;gap:10px;width:max-content;font-size:14px;color:var(--ink);margin:30px 0 0 -12px;padding:6px 14px 6px 12px;border-radius:999px;background:rgba(255,255,255,.92)}
@@ -604,6 +604,20 @@ html.locked{overflow:hidden}
 .course:last-child{margin-bottom:0}
 .course .code{display:block;font-size:13px;color:#707070;letter-spacing:.02em;margin-top:1px}
 @media print{.course{margin-bottom:3pt}.course .code{font-size:7.5pt}}
+
+/* Phones and touch screens: a header that gets out of the way, and no effects that make scrolling heavy */
+@media screen and (max-width:760px){
+  .top.away{transform:translateY(-100%);box-shadow:none}
+  .gal-zoom{padding:64px 0 40px}
+  .gal-zoom img{border-radius:0;margin:0}
+}
+@media (hover:none) and (pointer:coarse), screen and (max-width:760px){
+  .top.scrolled{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(255,255,255,.97)}
+  .blur{display:none}
+  .tile.float .face{animation:none}
+  .tile .face{box-shadow:0 1px 2px rgba(38,38,38,.08),0 8px 18px -8px rgba(38,38,38,.2)}
+  .gal-backdrop{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(9,15,15,.95)}
+}
 
 /* Sticky cursor (from YUBI). cursor.js turns it on; touch screens and reduced motion keep the system cursor.
    Teal, multiplied onto the page: solid teal on white, and text it wraps stays dark and readable.

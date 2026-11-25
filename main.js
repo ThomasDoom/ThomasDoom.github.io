@@ -477,7 +477,9 @@ function galleries() {
         const st = `--x:${t.x};--y:${t.y};--w:${t.w};--z:${t.z};--ar:${t.ar};${t.r ? `--r:${t.r};` : ''}${t.op ? `--op:${t.op};` : ''}${t.d ? `--d:${t.d};` : ''}`;
         if (t.ph) return `<div class="tile ph" style="${st}"><span class="face">${t.alt}</span></div>`;
         const i = n++;
-        const set = t.thumb && t.tw && !t.excerpt && t.tw < t.nw ? ` srcset="${t.thumb} ${t.tw}w, ${t.src} ${t.nw}w" sizes="${Math.round(t.w * .9)}px"` : '';
+        // first guess at the tile's on-screen width (tiles span t.w/1000 of the track), so a phone starts with the small file
+        const guess = Math.round(t.w / 1000 * Math.min(innerWidth, 1300) * Math.min(1, 2 / (devicePixelRatio || 1)));
+        const set = t.thumb && t.tw && !t.excerpt && t.tw < t.nw ? ` srcset="${t.thumb} ${t.tw}w, ${t.src} ${t.nw}w" sizes="${guess}px"` : '';
         return `<button type="button" class="tile${t.float ? ' float' : ''}${t.excerpt ? ' excerpt' : ''}" style="${st}" data-i="${i}" aria-label="${esc(t.alt)}. Open in gallery"><span class="face"><img src="${t.thumb || t.src}"${set} alt="" loading="lazy" decoding="async" draggable="false"></span></button>`;
       };
       const clusters = {}, loose = [];
@@ -498,7 +500,7 @@ function galleries() {
     pr.innerHTML = data.groups.map(g => {
       const figs = g.items.map(t => t.ph
         ? `<figure class="ph"><span>${esc(t.alt)}</span></figure>`
-        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img src="${t.src}" alt="${esc(t.alt)}" loading="eager"><figcaption>${t.cap}</figcaption></figure>`).join('');
+        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.src}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
       const single = g.items.length === 1;
       return `<section class="pgroup${single ? ' single' : ''}">${data.groups.length > 1 || g.cap ? `<p class="pgroup-cap"><b>${g.label}.</b> ${g.cap}</p>` : ''}<div class="pgrid">${figs}</div></section>`;
     }).join('');
@@ -543,7 +545,9 @@ function galleries() {
       track.style.setProperty('--bl', r.left + 'px'); track.style.setProperty('--br', Math.max(0, document.documentElement.clientWidth - r.right) + 'px');
       track.style.transform = ''; board.classList.remove('pinned', 'sda'); pin.style.height = ''; stick.style.top = '';
       colW = r.width;
-      track.querySelectorAll('img[srcset]').forEach(im => { im.sizes = Math.ceil(im.closest('.tile').offsetWidth * 1.06) + 'px'; });
+      // 3x phone screens get 2x images: sharp enough, and far less to decode while scrolling
+      const dprCap = Math.min(1, 2 / (devicePixelRatio || 1));
+      track.querySelectorAll('img[srcset]').forEach(im => { im.sizes = Math.ceil(im.closest('.tile').offsetWidth * 1.06 * dprCap) + 'px'; });
       offsets = panels.map(p => p.offsetLeft - panels[0].offsetLeft);
       const last = panels[panels.length - 1];
       dist = Math.max(0, offsets[offsets.length - 1] + last.offsetWidth - colW);
@@ -660,6 +664,7 @@ function galleries() {
       shown = now;
       slides.forEach((s, i) => s.classList.toggle('active', i === now));
       const t = items[now]; if (t) { cap.textContent = t.cap; grp.textContent = t.group; count.textContent = `${now + 1} / ${items.length}`; }
+      syncFull();
     }
   };
   const loop = ts => {
@@ -686,7 +691,7 @@ function galleries() {
     gal.classList.add('on'); open = true; shown = -1;
     sizes();
     slides.forEach(s => { const f = s.querySelector('.g-frame'); f.addEventListener('scroll', () => s.classList.toggle('scrolled', f.scrollTop > 20), { passive: true }); });
-    x = target = cur * stepW; paint();
+    x = target = cur * stepW; paint(); syncFull();
     // the clicked card grows into place
     const fr = slides[cur].querySelector('.g-frame');
     if (fromEl && fr && !reduce) {
@@ -709,7 +714,21 @@ function galleries() {
     setTimeout(() => { document.documentElement.classList.remove('locked'); document.documentElement.style.paddingRight = ''; }, 380);
     lastFocus && lastFocus.focus({ preventScroll: true });
   };
-  const zoomIn = () => { const t = items[shown]; if (!t) return; zimg.src = t.src; zimg.alt = t.alt; zimg.style.maxWidth = Math.min(t.nw, 1600) + 'px'; zoom.scrollTop = 0; zoom.classList.add('on'); zoom.setAttribute('aria-hidden', 'false'); zoom.querySelector('.gal-unzoom').focus({ preventScroll: true }); };
+  // full size: on a phone the image opens up to 2.5x the screen width and pans with a finger
+  const phone = () => innerWidth < 760;
+  const zoomW = t => phone() ? Math.min(t.nw, Math.round(innerWidth * 2.5)) : Math.min(t.nw, 1600);
+  const fullBtn = gal.querySelector('.gal-full');
+  const syncFull = () => {
+    const t = items[shown], s = slides[shown];
+    if (!t || !s) return;
+    const fr = s.querySelector('.g-frame'), shownW = fr ? fr.offsetWidth : 0;
+    // hidden when full size would not be noticeably larger than what is on screen
+    fullBtn.hidden = s.classList.contains('tall') || zoomW(t) < shownW * 1.25;
+  };
+  const zoomIn = () => { const t = items[shown]; if (!t || fullBtn.hidden) return; zimg.src = t.src; zimg.alt = t.alt;
+    if (phone()) { zimg.style.maxWidth = 'none'; zimg.style.width = zoomW(t) + 'px'; }
+    else { zimg.style.width = ''; zimg.style.maxWidth = zoomW(t) + 'px'; }
+    zoom.scrollTop = 0; zoom.scrollLeft = 0; zoom.classList.add('on'); zoom.setAttribute('aria-hidden', 'false'); zoom.querySelector('.gal-unzoom').focus({ preventScroll: true }); };
   function unzoom() { zoom.classList.remove('on'); zoom.setAttribute('aria-hidden', 'true'); }
 
   // wheel: a mouse notch moves one image; a trackpad glides and settles on the nearest image
@@ -777,7 +796,7 @@ function galleries() {
     else if (e.key === 'ArrowRight') go(cur + 1);
     else if (e.key === 'ArrowLeft') go(cur - 1);
   });
-  addEventListener('resize', () => { if (!open) return; sizes(); x = target = shown * stepW; paint(); });
+  addEventListener('resize', () => { if (!open) return; sizes(); x = target = shown * stepW; paint(); syncFull(); });
 }
 
 /* ---------- Section motion: word-by-word headings, reveal on scroll, sticky header state ---------- */
@@ -797,9 +816,26 @@ function motion() {
   targets.forEach(t => io.observe(t));
   addEventListener('beforeprint', () => targets.forEach(t => t.classList.add('in')));
   const top = document.getElementById('site-top');
-  const onScroll = () => top && top.classList.toggle('scrolled', scrollY > 40);
+  // phones: the bar slides away while reading down and comes back on any scroll up
+  let lastY = scrollY;
+  const onScroll = () => {
+    if (!top) return;
+    const y = scrollY;
+    top.classList.toggle('scrolled', y > 40);
+    if (innerWidth < 760 && !document.documentElement.classList.contains('locked')) {
+      if (y > lastY + 8 && y > 120) top.classList.add('away');
+      else if (y < lastY - 8 || y < 60) top.classList.remove('away');
+    } else top.classList.remove('away');
+    if (Math.abs(y - lastY) > 8 || y < 60) lastY = y;
+  };
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
 }
 
 motion(); ascii(); cites(); galleries();
+// The PDF copy of each board uses full-size images. Loading them with the page made phones decode
+// every full-size file for small tiles, so they load after the page on desktop, and on print anywhere.
+const printImgs = () => document.querySelectorAll('img[data-psrc]').forEach(i => { i.src = i.dataset.psrc; i.removeAttribute('data-psrc'); });
+addEventListener('beforeprint', printImgs);
+if (matchMedia('print').addEventListener) matchMedia('print').addEventListener('change', e => { if (e.matches) printImgs(); });
+addEventListener('load', () => { if (innerWidth >= 760) setTimeout(printImgs, 1500); });
 })();
