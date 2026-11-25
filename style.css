@@ -49,6 +49,9 @@ h1,h2,h3,h4,p{margin:0}
 .status .label{font-size:14px;margin-bottom:8px}
 .school p:not(.label){color:var(--ink);line-height:1.5}
 .seek{font-weight:300;font-size:clamp(28px,2.9vw,40px);line-height:1.12;letter-spacing:-.01em;color:var(--ink);max-width:31ch;text-wrap:balance}
+.seek-sub{color:var(--ink);line-height:1.5}
+.seek + .seek-sub{margin-top:14px}
+.foot a{color:inherit;text-decoration-color:var(--band);text-underline-offset:4px}
 .seek-actions{display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;margin-top:22px}
 .btn{display:inline-block;background:var(--deep);color:#fff;text-decoration:none;padding:11px 22px;border-radius:999px;transition:background .2s}
 .btn:hover{background:#346d69}
@@ -142,8 +145,9 @@ html.board-on .blur{visibility:hidden;transition:opacity .4s ease,visibility 0s 
   .cards{grid-template-columns:1fr}
 }
 @media screen and (max-width:760px){
-  .top{grid-template-columns:1fr auto;row-gap:12px}
-  .top nav{grid-column:1 / -1;grid-row:2;overflow-x:auto}
+  .top{grid-template-columns:1fr;padding-block:12px}
+  .top .name{display:none}
+  .top nav{justify-content:space-between;gap:12px;font-size:15px}
   .hero{padding-top:130px;min-height:auto;padding-bottom:72px}
   .card{grid-template-columns:1fr}
   .card .media{aspect-ratio:4/3}
@@ -513,6 +517,8 @@ html.locked{overflow:hidden}
   .status{display:grid !important;grid-template-columns:1fr 2fr !important;gap:18pt !important;padding-top:10pt}
   .status .label{font-size:9.5pt;margin-bottom:3pt}
   .seek{font-size:15pt !important;max-width:none}
+  .seek-sub{font-size:10.5pt}
+  .seek + .seek-sub{margin-top:5pt}
   #summary{margin-top:14pt !important}
   .prose{max-width:none;gap:6pt}
   .prose p{font-size:10.5pt}
@@ -571,7 +577,7 @@ html.locked{overflow:hidden}
   #experience .sec-intro{break-after:avoid}
   #experience{break-before:page;margin-top:0 !important}
   #skills{break-before:auto !important}
-  #path{break-before:auto !important}
+  #path{break-before:page !important;margin-top:0 !important}
   #path .sec-intro{break-after:avoid}
   #path .map{break-inside:avoid}
   .reqs{break-before:page}

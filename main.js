@@ -208,7 +208,8 @@ function ascii() {
     tmp.getContext('2d', { willReadFrequently: true }).drawImage(capImg, 0, 0, tmp.width, tmp.height);
     capGrid = toGlyphs(tmp, capCols, capRows, 1.3);
     capX = narrow ? vw - capCols * cw - 16 : Math.min(vw * .58, vw - capCols * cw - 40);
-    capY = narrow ? 96 : 120;
+    const topBar = document.getElementById('site-top');
+    capY = narrow ? (topBar ? topBar.offsetHeight : 48) + 16 : 120;
 
     const chr = [], al = [], rc = [];
     capGrid.forEach((row, r) => row.forEach((g, c) => { if (g && g[0] !== ' ') { chr.push(g[0]); al.push(g[1] * .75); rc.push(r * capCols + c); } }));
