@@ -23,7 +23,7 @@ h1,h2,h3,h4,p{margin:0}
 
 /* Header */
 .top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-block:20px}
-.top .name{font-weight:600;color:var(--ink);text-decoration:none}
+.top .name{font-weight:600;color:var(--ink);text-decoration:none;justify-self:start}
 .top nav{display:flex;gap:clamp(18px,2.6vw,36px)}
 .top nav a,.top .ext a{color:var(--ink);text-decoration:none}
 .top nav a:hover,.top .ext a:hover,.top nav a[aria-current]{text-decoration:underline;text-decoration-color:var(--teal);text-underline-offset:5px}

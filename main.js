@@ -279,20 +279,17 @@ function ascii() {
   let lastT = 0, lastScene = 0, sy = -1, sv = 0, prevTA = 1, fx = null, fy = 0, tilt = 0;
   const TEAL = 'rgba(62,127,122,';
 
-  /* ---- Star field: faint characters behind the first screen ----
-     Drawn once per layout on its own canvas. Fewer and fainter behind the text, none on the
-     spacecraft, fading out toward the end of the first screen. On desktop a few twinkle slowly;
-     phones and reduced motion get a still field. */
+  /* ---- Star field: a few small crosses around the spacecraft ----
+     Drawn once per layout on its own canvas, in the open space beside the text and never on
+     the spacecraft. On desktop a few twinkle slowly; phones and reduced motion get still ones. */
   const sc = document.getElementById('stars'), sctx = sc ? sc.getContext('2d') : null;
   let stars = [], twk = [], starH = 0, lastTw = 0;
-  const STAR_CH = [['.', 40], ['·', 18], ["'", 8], [':', 6], ['+', 16], ['*', 12]];
-  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function pick(r) { let n = r() * 100; for (const [c, w] of STAR_CH) { if ((n -= w) < 0) return c; } return '.'; }
   function starDraw(st, a) {
     sctx.font = `${st.px}px "Plex Mono", ui-monospace, monospace`;
     sctx.fillStyle = TEAL + a.toFixed(3) + ')';
     sctx.fillText(st.c, st.x, st.y);
   }
+  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function layoutStars() {
     if (!sctx) return;
     const hero = document.querySelector('.hero'); if (!hero) return;
@@ -301,26 +298,24 @@ function ascii() {
     sc.width = Math.round(W * dpr); sc.height = Math.round(H * dpr);
     sc.style.width = W + 'px'; sc.style.height = H + 'px';
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0); sctx.clearRect(0, 0, W, H); sctx.textBaseline = 'top';
+    stars = []; twk = [];
+    // a few small crosses in the open space around the spacecraft only, never behind text
     const r = rng(20261125);
     const top = (document.getElementById('site-top') || {}).offsetHeight || 60;
-    const txt = [...document.querySelectorAll('.hero .who, .hero h1, .hero .lead, .hero .status')].map(e => { const b = e.getBoundingClientRect(); return [b.left - 12, b.top + scrollY - 8, b.right + 12, b.bottom + scrollY + 8]; });
-    const capR = [capX - 10, capY - 8, capX + capCols * cw + 10, capY + capRows * ch + 8];
+    const who = document.querySelector('.hero .who'), lead = document.querySelector('.hero .lead');
+    const x0 = narrow ? 8 : Math.max(W * .5, (lead ? lead.getBoundingClientRect().right : 0) + 60);
+    const y1 = narrow ? (who ? who.getBoundingClientRect().top + scrollY - 14 : top + 200) : lead ? lead.getBoundingClientRect().bottom + scrollY : top + (H - top) * .5;
+    const capR = [capX - 14, capY - 10, capX + capCols * cw + 14, capY + capRows * ch + 10];
     const inside = (x, y, b) => x > b[0] && x < b[2] && y > b[1] && y < b[3];
-    const n = Math.round(W * H / (narrow ? 6000 : 4300));
-    stars = []; twk = [];
-    for (let i = 0; i < n; i++) {
-      const x = r() * W, y = top + 8 + r() * (H - top - 8), c = pick(r), k = r();
-      if (inside(x, y, capR)) continue;
-      const behindText = txt.some(b => inside(x, y, b));
-      if (behindText && k > .3) continue;
-      const big = (c === '+' || c === '*') && r() < .35;
-      const fade = Math.pow(1 - (y - top) / (H - top), .6);
-      const base = (.24 + r() * .3) * fade * (behindText ? .5 : 1);
-      if (base < .03) continue;
-      const st = { x, y, c, px: big ? 10 : 7, a: base, ph: r() * 6.28, sp: .5 + r() * .9 };
+    const n = narrow ? 5 : 14, gap = narrow ? 70 : 120;
+    for (let i = 0, tries = 0; i < n && tries < 400; tries++) {
+      const x = x0 + r() * (W - x0 - 16), y = top + 16 + r() * (y1 - top - 16), q = r();
+      if (inside(x, y, capR) || stars.some(st => (st.x - x) ** 2 + (st.y - y) ** 2 < gap * gap)) continue;
+      i++;
+      const st = { x, y, c: '+', px: 9, a: .28 + q * .14, ph: r() * 6.28, sp: .4 + r() * .6 };
       stars.push(st);
-      if (!reduce && !narrow && !behindText && r() < .08) twk.push(st);
-      starDraw(st, base);
+      if (!reduce && !narrow && q > .7) twk.push(st);
+      starDraw(st, st.a);
     }
   }
   function twinkle(now) {
