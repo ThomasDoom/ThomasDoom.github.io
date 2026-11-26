@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-/* ---------- ASCII scene: Apollo capsule with a tethered astronaut ---------- */
+/* ---------- ASCII scene: the ISS with an astronaut tethered on a spacewalk ---------- */
 function ascii() {
   const cv = document.getElementById('space'); if (!cv) return;
   const src = window.ASCII_SRC; if (!cv || !src) return;
@@ -114,6 +114,7 @@ function ascii() {
      small canvas, moved and rotated with a CSS transform, and redraws only while
      its characters move. Nothing repaints under the blurred header or bottom blur. */
   let capImg, capGrid = [], capCols = 0, capRows = 0, capX = 0, capY = 0;
+  let capPx = FONT_PX, capFont = '', capHatch = [.3, .78];
   let sceneScale = 1, narrow = false, R = 95;
   let sceneL = 0, sceneW = 0, sceneH = 0;
   let astBaseX = 0, astBaseY = 0, astW = 0, astH = 0, compX = 0, compY = 0, compA = .5;
@@ -201,12 +202,34 @@ function ascii() {
     AFONT = narrow ? 7 : 10; ACW = AFONT * .602; ACH = AFONT * 1.2;
     // short landscape screens (phones on their side): a smaller capsule in the right third, clear of the text
     const wide = narrow && vw > vh * 1.4 && vh < 600;
-    const capW = wide ? Math.min(340, vw * .34) : narrow ? Math.min(400, vw * .62) : Math.min(560, vw * .37);
-    capCols = Math.round(capW / cw);
-    capRows = Math.round(capCols * cw * (capImg.height / capImg.width) / ch);
-    const tmp = document.createElement('canvas'); tmp.width = capCols * 4; tmp.height = capRows * 4;
-    tmp.getContext('2d', { willReadFrequently: true }).drawImage(capImg, 0, 0, tmp.width, tmp.height);
-    capGrid = toGlyphs(tmp, capCols, capRows, 1.3);
+    let capW = wide ? Math.min(340, vw * .34) : narrow ? Math.min(400, vw * .62) : Math.min(560, vw * .37);
+    // taller subjects shrink so the art never runs into the text below
+    // phones: the art sits above the name line, so it gets only the room between the bar and the name
+    const who = document.querySelector('.hero .who');
+    const room = who ? who.getBoundingClientRect().top + scrollY - ((document.getElementById('site-top') || {}).offsetHeight || 48) - 30 : 190;
+    const maxH = wide ? vh * .45 : narrow ? Math.max(70, Math.min(190, room)) : 250;
+    if (src.art) {
+      // hand-drawn station: the character size is chosen so the drawing fits the width and height allowed
+      const A = narrow && src.art.compact ? src.art.compact : src.art.full;
+      const cols = Math.max(...A.map(l => l.length)), rows = A.length;
+      capPx = Math.max(4, Math.min(capW / (cols * .6), maxH / (rows * 1.25), narrow ? 7 : 9.5));
+      capFont = `${capPx}px "Plex Mono", ui-monospace, monospace`;
+      ctx.font = capFont; cw = ctx.measureText('M').width; ch = capPx * 1.25;
+      capCols = cols; capRows = rows;
+      // solar-cell texture sits back; structure stays crisp
+      capGrid = A.map(l => [...l.padEnd(cols)].map(c => c === ' ' ? null : [c, c === ':' ? .55 : 1.1]));
+      capHatch = (narrow && src.art.compact ? src.hatchCompact : src.hatchFull) || [.5, .5];
+    } else {
+      const asp = capImg.height / capImg.width;
+      if (capW * asp > maxH) capW = maxH / asp;
+      capCols = Math.round(capW / cw);
+      capRows = Math.round(capCols * cw * asp / ch);
+      const tmp = document.createElement('canvas'); tmp.width = capCols * 4; tmp.height = capRows * 4;
+      tmp.getContext('2d', { willReadFrequently: true }).drawImage(capImg, 0, 0, tmp.width, tmp.height);
+      capGrid = toGlyphs(tmp, capCols, capRows, 1.3);
+      capPx = FONT_PX; capFont = `${FONT_PX}px "Plex Mono", ui-monospace, monospace`;
+      capHatch = src.hatch || [.3, .78];
+    }
     capX = narrow ? vw - capCols * cw - 16 : Math.min(vw * .58, vw - capCols * cw - 40);
     const topBar = document.getElementById('site-top');
     capY = narrow ? (topBar ? topBar.offsetHeight : 48) + 16 : 120;
@@ -242,6 +265,7 @@ function ascii() {
     cv.width = Math.round(sceneW * dpr); cv.height = Math.round(sceneH * dpr);
     cv.style.left = sceneL + 'px'; cv.style.width = sceneW + 'px'; cv.style.height = sceneH + 'px';
     sceneDirty = true;
+    layoutStars();
 
     // after the first screen the astronaut floats in the empty left column beside the sections
     const main = document.querySelector('.sec .sec-main'), sec = main && main.parentElement;
@@ -254,8 +278,64 @@ function ascii() {
 
   let lastT = 0, lastScene = 0, sy = -1, sv = 0, prevTA = 1, fx = null, fy = 0, tilt = 0;
   const TEAL = 'rgba(62,127,122,';
+
+  /* ---- Star field: faint characters behind the first screen ----
+     Drawn once per layout on its own canvas. Fewer and fainter behind the text, none on the
+     spacecraft, fading out toward the end of the first screen. On desktop a few twinkle slowly;
+     phones and reduced motion get a still field. */
+  const sc = document.getElementById('stars'), sctx = sc ? sc.getContext('2d') : null;
+  let stars = [], twk = [], starH = 0, lastTw = 0;
+  const STAR_CH = [['.', 40], ['·', 18], ["'", 8], [':', 6], ['+', 16], ['*', 12]];
+  function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function pick(r) { let n = r() * 100; for (const [c, w] of STAR_CH) { if ((n -= w) < 0) return c; } return '.'; }
+  function starDraw(st, a) {
+    sctx.font = `${st.px}px "Plex Mono", ui-monospace, monospace`;
+    sctx.fillStyle = TEAL + a.toFixed(3) + ')';
+    sctx.fillText(st.c, st.x, st.y);
+  }
+  function layoutStars() {
+    if (!sctx) return;
+    const hero = document.querySelector('.hero'); if (!hero) return;
+    const W = vw, H = Math.ceil(hero.getBoundingClientRect().bottom + scrollY);
+    starH = H;
+    sc.width = Math.round(W * dpr); sc.height = Math.round(H * dpr);
+    sc.style.width = W + 'px'; sc.style.height = H + 'px';
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0); sctx.clearRect(0, 0, W, H); sctx.textBaseline = 'top';
+    const r = rng(20261125);
+    const top = (document.getElementById('site-top') || {}).offsetHeight || 60;
+    const txt = [...document.querySelectorAll('.hero .who, .hero h1, .hero .lead, .hero .status')].map(e => { const b = e.getBoundingClientRect(); return [b.left - 12, b.top + scrollY - 8, b.right + 12, b.bottom + scrollY + 8]; });
+    const capR = [capX - 10, capY - 8, capX + capCols * cw + 10, capY + capRows * ch + 8];
+    const inside = (x, y, b) => x > b[0] && x < b[2] && y > b[1] && y < b[3];
+    const n = Math.round(W * H / (narrow ? 6000 : 4300));
+    stars = []; twk = [];
+    for (let i = 0; i < n; i++) {
+      const x = r() * W, y = top + 8 + r() * (H - top - 8), c = pick(r), k = r();
+      if (inside(x, y, capR)) continue;
+      const behindText = txt.some(b => inside(x, y, b));
+      if (behindText && k > .3) continue;
+      const big = (c === '+' || c === '*') && r() < .35;
+      const fade = Math.pow(1 - (y - top) / (H - top), .6);
+      const base = (.24 + r() * .3) * fade * (behindText ? .5 : 1);
+      if (base < .03) continue;
+      const st = { x, y, c, px: big ? 10 : 7, a: base, ph: r() * 6.28, sp: .5 + r() * .9 };
+      stars.push(st);
+      if (!reduce && !narrow && !behindText && r() < .08) twk.push(st);
+      starDraw(st, base);
+    }
+  }
+  function twinkle(now) {
+    if (!twk.length || now - lastTw < 110 || scrollY > starH) return;
+    lastTw = now;
+    const t = now / 1000;
+    for (const st of twk) {
+      const w = st.px * .7, h = st.px * 1.2;
+      sctx.clearRect(st.x - 1, st.y - 1, w + 2, h + 2);
+      starDraw(st, st.a * (.3 + .7 * (.5 + .5 * Math.sin(t * st.sp + st.ph))));
+    }
+  }
   function frame(now, force) {
     const dt = Math.min(3, lastT ? (now - lastT) / 16.7 : 1); lastT = now;
+    twinkle(now);
     const t = (now - t0) / 1000, y = scrollY, motion = reduce ? 0 : 1;
     if (sy < 0) sy = y;
     sv += ((y - sy) / dt - sv) * Math.min(1, .25 * dt); sy = y;
@@ -345,7 +425,8 @@ function ascii() {
     ctx.textBaseline = 'top';
     if (tA > .005) {
       // tether from the capsule hatch to the chest pack, in page coordinates
-      const hx = capX + capCols * cw * .3, hy = capY + capRows * ch * .78;
+      const hatch = capHatch;
+      const hx = capX + capCols * cw * hatch[0], hy = capY + capRows * ch * hatch[1];
       const bx = acx + 2 * cs + astH * .05 * sn, by = acy + y + 2 * sn - astH * .05 * cs;
       const sag = 34 * sceneScale + motion * Math.sin(t * .4) * 12 * sceneScale;
       const c1x = hx - 20, c1y = hy + sag * 1.8, c2x = bx + 40, c2y = by + sag * 1.4;
@@ -366,7 +447,7 @@ function ascii() {
     }
     ctx.drawImage(capLayer, capX, capY, capCols * cw, capRows * ch);
     if (cap.list.length) {
-      ctx.font = `${FONT_PX}px "Plex Mono", ui-monospace, monospace`;
+      ctx.font = capFont;
       ctx.fillStyle = 'rgba(38,38,38,.7)';
       for (const i of cap.list) { const rc = capRC[i]; ctx.fillText(capChr[i], capX + (rc % capCols) * cw + cap.ox[i], capY + ((rc / capCols) | 0) * ch + cap.oy[i]); }
     }
@@ -381,7 +462,7 @@ function ascii() {
   function start() { if (running || reduce) return; running = true; raf = requestAnimationFrame(loop); }
   function stop() { running = false; cancelAnimationFrame(raf); lastT = 0; }
 
-  Promise.all([load(src.capsule), document.fonts ? document.fonts.load(`${FONT_PX}px "Plex Mono"`) : 0]).then(([c]) => {
+  Promise.all([src.capsule ? load(src.capsule) : null, document.fonts ? document.fonts.load(`${FONT_PX}px "Plex Mono"`) : 0]).then(([c]) => {
     capImg = c;
     layout(); frame(performance.now(), true);
     if (!reduce) start();
@@ -476,6 +557,8 @@ function galleries() {
       const tile = t => {
         const st = `--x:${t.x};--y:${t.y};--w:${t.w};--z:${t.z};--ar:${t.ar};${t.r ? `--r:${t.r};` : ''}${t.op ? `--op:${t.op};` : ''}${t.d ? `--d:${t.d};` : ''}`;
         if (t.ph) return `<div class="tile ph" style="${st}"><span class="face">${t.alt}</span></div>`;
+        // a video plays where it sits, with its own controls; it is still in the gallery
+        if (t.video) { n++; return `<div class="tile video" style="${st}"><span class="face"><video src="${t.src}" poster="${t.poster}" controls playsinline preload="none" aria-label="${esc(t.alt)}"></video></span></div>`; }
         const i = n++;
         // first guess at the tile's on-screen width (tiles span t.w/1000 of the track), so a phone starts with the small file
         const guess = Math.round(t.w / 1000 * Math.min(innerWidth, 1300) * Math.min(1, 2 / (devicePixelRatio || 1)));
@@ -500,7 +583,7 @@ function galleries() {
     pr.innerHTML = data.groups.map(g => {
       const figs = g.items.map(t => t.ph
         ? `<figure class="ph"><span>${esc(t.alt)}</span></figure>`
-        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.src}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
+        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.video ? t.poster : t.src}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
       const single = g.items.length === 1;
       return `<section class="pgroup${single ? ' single' : ''}">${data.groups.length > 1 || g.cap ? `<p class="pgroup-cap"><b>${g.label}.</b> ${g.cap}</p>` : ''}<div class="pgrid">${figs}</div></section>`;
     }).join('');
@@ -608,7 +691,7 @@ function galleries() {
 
     // drag with a mouse; a drag never opens an image
     let sx = null, s0 = 0, moved = 0;
-    track.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; sx = e.clientX; s0 = mode === 'pin' ? scrollY : track.scrollLeft; moved = 0; });
+    track.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.target.closest('video')) return; sx = e.clientX; s0 = mode === 'pin' ? scrollY : track.scrollLeft; moved = 0; });
     addEventListener('pointermove', e => {
       if (sx === null) return; moved = e.clientX - sx;
       if (Math.abs(moved) > 5) { track.classList.add('dragging'); if (mode === 'pin') scrollTo({ top: s0 - moved, behavior: 'instant' }); else track.scrollLeft = s0 - moved; }
@@ -662,7 +745,7 @@ function galleries() {
     const now = Math.round(f);
     if (now !== shown) {
       shown = now;
-      slides.forEach((s, i) => s.classList.toggle('active', i === now));
+      slides.forEach((s, i) => { s.classList.toggle('active', i === now); const v = s.querySelector('video'); if (v && i !== now) v.pause(); });
       const t = items[now]; if (t) { cap.textContent = t.cap; grp.textContent = t.group; count.textContent = `${now + 1} / ${items.length}`; }
       syncFull();
     }
@@ -682,8 +765,9 @@ function galleries() {
 
   function openGallery(key, i, fromEl) {
     items = flat(key); cur = Math.max(0, Math.min(items.length - 1, i));
+    document.querySelectorAll('.board video').forEach(v => v.pause());
     ttl.textContent = G[key].title;
-    track.innerHTML = items.map(t => `<figure class="g-slide"><div class="g-frame"><img src="${t.src}" alt="${esc(t.alt)}" draggable="false"></div><span class="hint">Scroll for the full sheet</span></figure>`).join('');
+    track.innerHTML = items.map(t => `<figure class="g-slide"><div class="g-frame${t.video ? ' vid' : ''}">${t.video ? `<video src="${t.src}" poster="${t.poster}" controls playsinline preload="none" aria-label="${esc(t.alt)}"></video>` : `<img src="${t.src}" alt="${esc(t.alt)}" draggable="false">`}</div><span class="hint">Scroll for the full sheet</span></figure>`).join('');
     slides = [...track.children];
     lastFocus = document.activeElement;
     const sbw = innerWidth - document.documentElement.clientWidth;
@@ -710,6 +794,7 @@ function galleries() {
   const closeGallery = () => {
     if (zoom.classList.contains('on')) return unzoom();
     gal.classList.remove('on'); open = false;
+    track.querySelectorAll('video').forEach(v => v.pause());
     cancelAnimationFrame(raf); raf = 0;
     setTimeout(() => { document.documentElement.classList.remove('locked'); document.documentElement.style.paddingRight = ''; }, 380);
     lastFocus && lastFocus.focus({ preventScroll: true });
@@ -723,7 +808,7 @@ function galleries() {
     if (!t || !s) return;
     const fr = s.querySelector('.g-frame'), shownW = fr ? fr.offsetWidth : 0;
     // hidden when full size would not be noticeably larger than what is on screen
-    fullBtn.hidden = s.classList.contains('tall') || zoomW(t) < shownW * 1.25;
+    fullBtn.hidden = !!t.video || s.classList.contains('tall') || zoomW(t) < shownW * 1.25;
   };
   const zoomIn = () => { const t = items[shown]; if (!t || fullBtn.hidden) return; zimg.src = t.src; zimg.alt = t.alt;
     if (phone()) { zimg.style.maxWidth = 'none'; zimg.style.width = zoomW(t) + 'px'; }
@@ -750,6 +835,7 @@ function galleries() {
   let dx0 = null, t0 = 0, xs = 0, vel = 0, lastX = 0, lastT = 0, dragged = 0;
   stage.addEventListener('pointerdown', e => {
     if (e.target.closest('.g-slide.active.tall .g-frame') && e.pointerType === 'mouse') return;
+    if (e.target.closest('.g-slide.active video')) return;
     dx0 = e.clientX; t0 = target; dragged = 0; vel = 0; lastX = e.clientX; lastT = performance.now();
   });
   addEventListener('pointermove', e => {
@@ -776,7 +862,7 @@ function galleries() {
   // hover: the front image lifts and leans toward the pointer; the frame scales with it, so nothing is cropped
   stage.addEventListener('pointermove', e => {
     if (reduce || dx0 !== null) return;
-    const f = e.target.closest('.g-slide.active .g-frame');
+    const f = e.target.closest('.g-slide.active .g-frame:not(.vid)');
     slides.forEach(s => { const fr = s.querySelector('.g-frame'); if (fr !== f && fr) { fr.style.scale = ''; fr.style.translate = ''; } });
     if (!f || f.closest('.tall')) { if (f) f.style.scale = '1.015'; return; }
     const r = f.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5;
