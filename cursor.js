@@ -17,11 +17,13 @@
 (() => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || !matchMedia('(pointer: fine)').matches) return;
 
-  // selector -> [data-radius, data-pull]. Pull 0 = wrap only, no lean.
+  // selector -> [data-radius, data-pull, data-min (optional)]. Pull 0 = wrap only, no lean.
   const AUTO = [
     ['.top nav a, .top .ext a, .top .name', 'pill', 0.2],
     ['.btn, .open-gal, .chip, .gal-btn, .gal-full', 'pill', 0.2],
     ['.link', 'box', 0.1],
+    ['.foot a', 'pill', 0.2],   // email and LinkedIn
+    ['.pop a', 'pill', 0.1, 40], // source link in a citation popup; smaller so the pill stays inside the popup
   ];
   const NATIVE = '.board-track, .gal-stage, .gal-zoom, .tile, .g-frame, .cite, input, textarea, select, [contenteditable]';
 
@@ -240,12 +242,13 @@
   }
 
   function scan(root) {
-    for (const [sel, radius, pull] of AUTO) {
+    for (const [sel, radius, pull, min] of AUTO) {
       for (const n of root.querySelectorAll(sel)) {
         if (!n.hasAttribute('data-hover')) {
           n.setAttribute('data-hover', '');
           n.dataset.radius ??= radius;
           n.dataset.pull ??= String(pull);
+          if (min) n.dataset.min ??= String(min);
         }
       }
     }
