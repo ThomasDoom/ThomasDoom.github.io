@@ -558,7 +558,7 @@ function galleries() {
         const st = `--x:${t.x};--y:${t.y};--w:${t.w};--z:${t.z};--ar:${t.ar};${t.r ? `--r:${t.r};` : ''}${t.op ? `--op:${t.op};` : ''}${t.d ? `--d:${t.d};` : ''}`;
         if (t.ph) return `<div class="tile ph" style="${st}"><span class="face">${t.alt}</span></div>`;
         // a video plays where it sits, with its own controls; it is still in the gallery
-        if (t.video) { n++; return `<div class="tile video" style="${st}"><span class="face"><video src="${t.src}" poster="${t.poster}" controls playsinline preload="none" aria-label="${esc(t.alt)}"></video></span></div>`; }
+        if (t.video) { n++; return `<div class="tile video" style="${st}"><span class="face"><video src="${t.src}" poster="${t.poster}" controls playsinline muted loop preload="none" data-auto aria-label="${esc(t.alt)}"></video></span></div>`; }
         const i = n++;
         // first guess at the tile's on-screen width (tiles span t.w/1000 of the track), so a phone starts with the small file
         const guess = Math.round(t.w / 1000 * Math.min(innerWidth, 1300) * Math.min(1, 2 / (devicePixelRatio || 1)));
@@ -689,14 +689,31 @@ function galleries() {
     // a sideways trackpad swipe over a pinned board scrolls the page
     stick.addEventListener('wheel', e => { if (mode === 'pin' && Math.abs(e.deltaX) > Math.abs(e.deltaY)) { e.preventDefault(); scrollBy({ top: e.deltaX, behavior: 'instant' }); } }, { passive: false });
 
-    // drag with a mouse; a drag never opens an image
-    let sx = null, s0 = 0, moved = 0;
-    track.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.target.closest('video')) return; sx = e.clientX; s0 = mode === 'pin' ? scrollY : track.scrollLeft; moved = 0; });
+    // Drag with a mouse. On a pinned board a finger swiping sideways moves it the same way (a vertical
+    // swipe still scrolls the page, which also moves it). A drag never opens an image.
+    let sx = null, sy = 0, s0 = 0, moved = 0, touch = false, axis = '', vx = 0, lt = 0, lx = 0;
+    track.addEventListener('pointerdown', e => {
+      if (e.target.closest('video')) return;
+      touch = e.pointerType !== 'mouse';
+      if (touch && mode !== 'pin') return;               // a native strip already swipes on its own
+      sx = e.clientX; sy = e.clientY; s0 = mode === 'pin' ? scrollY : track.scrollLeft; moved = 0; axis = touch ? '' : 'x';
+      vx = 0; lt = e.timeStamp; lx = e.clientX;
+    });
     addEventListener('pointermove', e => {
-      if (sx === null) return; moved = e.clientX - sx;
+      if (sx === null) return;
+      if (!axis) { const dx = Math.abs(e.clientX - sx), dy = Math.abs(e.clientY - sy); if (dx < 8 && dy < 8) return; axis = dx > dy ? 'x' : 'y'; }
+      if (axis !== 'x') { sx = null; return; }
+      moved = e.clientX - sx;
+      if (e.timeStamp > lt) { vx = (e.clientX - lx) / (e.timeStamp - lt); lt = e.timeStamp; lx = e.clientX; }
       if (Math.abs(moved) > 5) { track.classList.add('dragging'); if (mode === 'pin') scrollTo({ top: s0 - moved, behavior: 'instant' }); else track.scrollLeft = s0 - moved; }
     });
-    addEventListener('pointerup', () => { if (sx === null) return; sx = null; setTimeout(() => track.classList.remove('dragging'), 0); });
+    const endDrag = () => {
+      if (sx === null) return; sx = null;
+      // a finger flick keeps the board gliding a little, the way a native swipe does
+      if (touch && mode === 'pin' && Math.abs(vx) > .3 && !reduce) scrollBy({ top: -vx * 260, behavior: 'smooth' });
+      setTimeout(() => track.classList.remove('dragging'), 0);
+    };
+    addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
     track.addEventListener('click', e => {
       if (Math.abs(moved) > 5) { moved = 0; return; }
       const cl = e.target.closest('.cluster.active');
@@ -713,7 +730,16 @@ function galleries() {
   const zoom = gal.querySelector('.gal-zoom'), zimg = zoom.querySelector('img');
   let items = [], slides = [], cur = 0, x = 0, target = 0, stepW = 1, slideW = 1, raf = 0, last = 0, open = false, lastFocus = null, idleT = 0, shown = -1;
 
-  const flat = key => { const out = []; G[key].groups.forEach(g => g.items.forEach(t => { if (!t.ph) out.push({ ...t, group: g.label }); })); return out; };
+  // board videos play while at least half on screen (muted, so browsers allow it) and pause off screen
+  const autoVids = [...document.querySelectorAll('.board video[data-auto]')];
+  if (autoVids.length && window.IntersectionObserver && !reduce) {
+    const vio = new IntersectionObserver(es => es.forEach(en => {
+      const v = en.target;
+      if (en.intersectionRatio >= .5 && !open) { v.muted = true; v.play().catch(() => {}); } else if (en.intersectionRatio < .5) v.pause();
+    }), { threshold: [0, .5] });
+    autoVids.forEach(v => vio.observe(v));
+  }
+  const flat = key => { const out = []; G[key].groups.forEach(g => g.items.forEach(t => { if (!t.ph) out.push({ ...t, group: g.label, board: key }); })); return out; };
   const sizes = () => {
     const bh = gal.querySelector('.gal-bar').offsetHeight, fh = gal.querySelector('.gal-foot').offsetHeight;
     track.style.setProperty('--gt', bh + 'px'); track.style.setProperty('--gb', fh + 'px');
@@ -726,7 +752,8 @@ function galleries() {
       s.style.width = slideW + 'px'; s.style.marginRight = (stepW - slideW) + 'px';
       // fit the whole image in the stage; a sheet that would shrink below half width scrolls instead
       const fitW = Math.min(slideW, H / ar, t.nw || Infinity), readW = Math.min(slideW, 900, t.nw || Infinity);
-      const tall = ar > 1.2 && fitW < readW * .6;
+      const photo = t.photo || t.board === 'hawaii' || t.video;
+      const tall = !photo && ar > 1.2 && fitW < readW * .6;
       s.classList.toggle('tall', tall);
       fr.style.width = (tall ? readW : fitW) + 'px';
       fr.style.height = (tall ? H : fitW * ar) + 'px';
@@ -745,7 +772,7 @@ function galleries() {
     const now = Math.round(f);
     if (now !== shown) {
       shown = now;
-      slides.forEach((s, i) => { s.classList.toggle('active', i === now); const v = s.querySelector('video'); if (v && i !== now) v.pause(); });
+      slides.forEach((s, i) => { s.classList.toggle('active', i === now); const v = s.querySelector('video'); if (v) { if (i !== now) v.pause(); else if (!reduce) { v.muted = true; v.loop = true; v.play().catch(() => {}); } } });
       const t = items[now]; if (t) { cap.textContent = t.cap; grp.textContent = t.group; count.textContent = `${now + 1} / ${items.length}`; }
       syncFull();
     }
@@ -795,6 +822,7 @@ function galleries() {
     if (zoom.classList.contains('on')) return unzoom();
     gal.classList.remove('on'); open = false;
     track.querySelectorAll('video').forEach(v => v.pause());
+    autoVids.forEach(v => { const r = v.getBoundingClientRect(); if (!reduce && r.bottom > innerHeight * .25 && r.top < innerHeight * .75) v.play().catch(() => {}); });
     cancelAnimationFrame(raf); raf = 0;
     setTimeout(() => { document.documentElement.classList.remove('locked'); document.documentElement.style.paddingRight = ''; }, 380);
     lastFocus && lastFocus.focus({ preventScroll: true });
