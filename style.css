@@ -105,6 +105,7 @@ tbody tr:nth-child(even) > :last-child{border-radius:0 8px 8px 0}
 /* Citations: superscript with a hover card */
 .cite{position:relative;color:var(--deep);font-weight:600;font-size:.7em;vertical-align:super;line-height:0;cursor:help;padding:0 1px;text-decoration:none}
 .cite.next::before{content:",";padding-right:1px}
+.research p+p{margin-top:.9em}
 .cited{text-decoration:underline dotted var(--deep);text-underline-offset:4px;color:var(--ink)}
 .pop{position:absolute;z-index:20;width:320px;padding:14px 16px;background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(62,127,122,.18),0 12px 32px rgba(38,38,38,.12);font-size:15px;line-height:1.45;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;pointer-events:none}
 .pop.on{opacity:1;transform:none;pointer-events:auto}
