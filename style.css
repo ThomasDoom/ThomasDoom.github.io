@@ -104,6 +104,7 @@ tbody tr:nth-child(even) > :last-child{border-radius:0 8px 8px 0}
 
 /* Citations: superscript with a hover card */
 .cite{position:relative;color:var(--deep);font-weight:600;font-size:.7em;vertical-align:super;line-height:0;cursor:help;padding:0 1px;text-decoration:none}
+.cite.next::before{content:",";padding-right:1px}
 .cited{text-decoration:underline dotted var(--deep);text-underline-offset:4px;color:var(--ink)}
 .pop{position:absolute;z-index:20;width:320px;padding:14px 16px;background:#fff;border-radius:10px;box-shadow:0 0 0 1px rgba(62,127,122,.18),0 12px 32px rgba(38,38,38,.12);font-size:15px;line-height:1.45;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;pointer-events:none}
 .pop.on{opacity:1;transform:none;pointer-events:auto}
@@ -312,6 +313,10 @@ tbody tr:hover > *{background:var(--mist)}
   box-shadow:0 1px 2px rgba(38,38,38,.08),0 12px 30px -8px rgba(38,38,38,.22);
   transition:scale .45s cubic-bezier(.2,.75,.2,1),box-shadow .45s ease}
 .tile img{width:100%;height:100%;object-fit:cover;object-position:var(--op,left top);display:block}
+.tile img{opacity:0;transition:opacity .45s cubic-bezier(.2,.75,.2,1)}
+.tile img.in{opacity:1}
+@media (prefers-reduced-motion:reduce){.tile img{transition:none}}
+@media print{.tile img{opacity:1}}
 .tile.ph{cursor:default}
 .tile.video{cursor:default}
 .tile.video video{display:block;width:100%;height:100%;object-fit:cover;background:#131416}

@@ -499,6 +499,8 @@ function cites() {
     if (!order.includes(k)) order.push(k);
     const n = order.indexOf(k) + 1;
     el.textContent = n; el.href = '#ref-' + n; el.dataset.n = n;
+    // a citation directly after another one gets a comma, so 4 and 5 never read as 45
+    const prev = el.previousSibling; if (prev && prev.nodeType === 1 && prev.classList.contains('cite')) el.classList.add('next');
   });
   const list = document.getElementById('ref-list');
   if (list) list.innerHTML = order.map((k, i) => { const r = R[k]; return `<li id="ref-${i + 1}">${r[0]}${r[2] ? ` <a href="${r[2]}">${r[2]}</a>` : ''}</li>`; }).join('');
@@ -571,14 +573,30 @@ function galleries() {
       return `<figure class="panel" style="--pw:${g.pw}"><div class="panel-canvas" data-pw="${g.pw}">${inner}</div><figcaption class="panel-cap"><b>${g.label}.</b> ${g.cap}${g.hint ? `<span class="hover-hint"> ${g.hint}</span>` : ''}</figcaption></figure>`;
     }).join('');
     const panels = [...track.querySelectorAll('.panel')];
+    // each photo fades in once it has loaded and decoded, instead of popping in line by line
+    track.querySelectorAll('.tile img').forEach(im => {
+      const show = () => im.classList.add('in');
+      if (im.complete && im.naturalWidth) return show();
+      im.addEventListener('load', () => (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(show), { once: true });
+      im.addEventListener('error', show, { once: true });
+    });
+    // the full-size file starts downloading while the pointer is on a tile, so the gallery never opens on a blank frame
+    const full = []; data.groups.forEach(g => g.items.forEach(t => { if (!t.ph) full.push(t); }));
+    const fetched = new Set();
+    const prefetch = t => { if (!t || t.video || fetched.has(t.src)) return; fetched.add(t.src); const im = new Image(); im.decoding = 'async'; im.src = t.src; };
+    const near = e => { const t = e.target.closest('.tile[data-i]'); if (t) prefetch(full[+t.dataset.i]); };
+    track.addEventListener('pointerover', near); track.addEventListener('focusin', near);
+    const openBtn = board.querySelector('[data-open]');
+    ['pointerenter', 'focus'].forEach(ev => openBtn.addEventListener(ev, () => prefetch(full[0])));
     // The PDF holds every image on the board, grouped and captioned the same way,
-    // laid out as a plain grid. Featured images print larger.
+    // laid out as a plain grid. Featured images print larger. Photo boards print from JPEG copies:
+    // the browser re-encodes WebP into the PDF uncompressed, but copies a JPEG in as it is.
     const pr = document.createElement('div');
     pr.className = 'print-board';
     pr.innerHTML = data.groups.map(g => {
       const figs = g.items.map(t => t.ph
         ? `<figure class="ph"><span>${esc(t.alt)}</span></figure>`
-        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.video ? t.poster : t.src}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
+        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.video ? t.poster : data.printJpg ? t.src.replace(/\.webp$/, '-print.jpg') : t.src}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
       const single = g.items.length === 1;
       return `<section class="pgroup${single ? ' single' : ''}">${data.groups.length > 1 || g.cap ? `<p class="pgroup-cap"><b>${g.label}.</b> ${g.cap}</p>` : ''}<div class="pgrid">${figs}</div></section>`;
     }).join('');
@@ -943,8 +961,9 @@ function motion() {
 motion(); ascii(); cites(); galleries();
 // The PDF copy of each board uses full-size images. Loading them with the page made phones decode
 // every full-size file for small tiles, so they load after the page on desktop, and on print anywhere.
-const printImgs = () => document.querySelectorAll('img[data-psrc]').forEach(i => { i.src = i.dataset.psrc; i.removeAttribute('data-psrc'); });
+// the timed desktop load asks for low priority, so it never slows the photos a visitor is looking at
+const printImgs = low => document.querySelectorAll('img[data-psrc]').forEach(i => { if (low === true) i.fetchPriority = 'low'; i.src = i.dataset.psrc; i.removeAttribute('data-psrc'); });
 addEventListener('beforeprint', printImgs);
 if (matchMedia('print').addEventListener) matchMedia('print').addEventListener('change', e => { if (e.matches) printImgs(); });
-addEventListener('load', () => { if (innerWidth >= 760) setTimeout(printImgs, 1500); });
+addEventListener('load', () => { if (innerWidth >= 760) setTimeout(() => printImgs(true), 1500); });
 })();
