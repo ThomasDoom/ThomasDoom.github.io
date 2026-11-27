@@ -601,8 +601,9 @@ function galleries() {
     pr.innerHTML = `<div class="pgrid${picks.length === 1 ? ' single' : ''}">${picks.map(t =>
       `<figure><img data-psrc="${t.psrc || (t.video ? t.poster : t.src)}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('')}</div>`;
     board.after(pr);
-    // a board with only placeholders has nothing to open yet
-    if (!n) board.querySelector('[data-open]').hidden = true;
+    // a board with only placeholders has nothing to open yet, and a board with one item (the YUBI video)
+    // needs no gallery button: the video plays in place with its own controls, full screen included
+    if (n < 2) board.querySelector('[data-open]').hidden = true;
 
     // stacks: the card under the pointer's left-to-right position comes forward
     track.querySelectorAll('.panel-canvas').forEach(canvas => {
