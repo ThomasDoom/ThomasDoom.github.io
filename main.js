@@ -589,19 +589,17 @@ function galleries() {
     track.addEventListener('pointerover', near); track.addEventListener('focusin', near);
     const openBtn = board.querySelector('[data-open]');
     ['pointerenter', 'focus'].forEach(ev => openBtn.addEventListener(ev, () => prefetch(full[0])));
-    // The PDF holds every image on the board, grouped and captioned the same way,
-    // laid out as a plain grid. Featured images print larger. Each image prints from its psrc file:
-    // sheets and charts as lossless PNG, photos as JPEG sized to their box (the browser copies a JPEG
-    // into the PDF as it is but stores WebP uncompressed). The portfolio PDF limit is 6 MB.
+    // The PDF shows each board's four ranked images (print: 1-4), two to a row, captioned as on the site.
+    // A board with no ranked images prints all of them. Each image prints from its psrc file when it has
+    // one: sheets and charts as lossless PNG (the browser stores WebP in a PDF uncompressed); photos print
+    // as the original JPEG, which the browser copies in as it is. The portfolio PDF limit is 6 MB.
     const pr = document.createElement('div');
     pr.className = 'print-board';
-    pr.innerHTML = data.groups.map(g => {
-      const figs = g.items.map(t => t.ph
-        ? `<figure class="ph"><span>${esc(t.alt)}</span></figure>`
-        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.psrc || (t.video ? t.poster : t.src)}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
-      const single = g.items.length === 1;
-      return `<section class="pgroup${single ? ' single' : ''}">${data.groups.length > 1 || g.cap ? `<p class="pgroup-cap"><b>${g.label}.</b> ${g.cap}</p>` : ''}<div class="pgrid">${figs}</div></section>`;
-    }).join('');
+    const all = data.groups.flatMap(g => g.items).filter(t => !t.ph);
+    const ranked = all.filter(t => t.print).sort((a, b) => a.print - b.print);
+    const picks = ranked.length ? ranked : all;
+    pr.innerHTML = `<div class="pgrid${picks.length === 1 ? ' single' : ''}">${picks.map(t =>
+      `<figure><img data-psrc="${t.psrc || (t.video ? t.poster : t.src)}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('')}</div>`;
     board.after(pr);
     // a board with only placeholders has nothing to open yet
     if (!n) board.querySelector('[data-open]').hidden = true;
