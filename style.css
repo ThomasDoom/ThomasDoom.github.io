@@ -95,6 +95,7 @@ tbody tr:nth-child(even) > :last-child{border-radius:0 8px 8px 0}
 
 .resume-img{max-width:780px;border-radius:10px;overflow:hidden;background:var(--mist);padding:14px}
 .resume-img img{border-radius:4px}
+.resume-img img.print-only{display:none}
 
 .refs ol{margin:0;padding-left:1.4em;font-size:15px;line-height:1.5;max-width:90ch}
 .refs li{padding:4px 0 4px .3em}
@@ -584,6 +585,9 @@ html.locked{overflow:hidden}
   #resume{break-before:page;margin-top:0 !important}
   .resume-img{max-width:100% !important;width:fit-content;display:block;margin:0 auto;border:1px solid var(--band)}
   .resume-img img{max-height:8.2in;width:auto;max-width:100%;display:block}
+  /* the PDF uses a 300 dpi render of the resume: the vector file would add about 2 MB to a 6 MB limit */
+  .resume-img img:not(.print-only){display:none}
+  .resume-img img.print-only{display:block}
   .refs{break-before:page;margin-top:0 !important}
   .exp-head,.exp-head + *{break-before:auto}
   #experience .sec-intro{break-after:avoid}

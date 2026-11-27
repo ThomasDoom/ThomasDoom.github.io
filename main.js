@@ -557,8 +557,9 @@ function galleries() {
         // a video plays where it sits, with its own controls; it is still in the gallery
         if (t.video) { n++; return `<div class="tile video" style="${st}"><span class="face"><video src="${t.src}" poster="${t.poster}" controls playsinline muted loop preload="none" data-auto aria-label="${esc(t.alt)}"></video></span></div>`; }
         const i = n++;
-        // first guess at the tile's on-screen width (tiles span t.w/1000 of the track), so a phone starts with the small file
-        const guess = Math.round(t.w / 1000 * Math.min(innerWidth, 1300) * Math.min(1, 2 / (devicePixelRatio || 1)));
+        // the tile's on-screen width: a panel is pw/1000 of 92% of the track (96% on a phone) and a tile is w/pw of its panel.
+        // Above 2x screens it counts as 2x, so a phone takes the tile file.
+        const guess = Math.round(t.w / 1000 * (innerWidth <= 760 ? .96 : .92) * (track.clientWidth || Math.min(innerWidth, 1300)) * Math.min(1, 2 / (devicePixelRatio || 1)));
         const set = t.thumb && t.tw && !t.excerpt && t.tw < t.nw ? ` srcset="${t.thumb} ${t.tw}w, ${t.src} ${t.nw}w" sizes="${guess}px"` : '';
         return `<button type="button" class="tile${t.float ? ' float' : ''}${t.excerpt ? ' excerpt' : ''}" style="${st}" data-i="${i}" aria-label="${esc(t.alt)}. Open in gallery"><span class="face"><img src="${t.thumb || t.src}"${set} alt="" loading="lazy" decoding="async" draggable="false"></span></button>`;
       };
@@ -589,14 +590,15 @@ function galleries() {
     const openBtn = board.querySelector('[data-open]');
     ['pointerenter', 'focus'].forEach(ev => openBtn.addEventListener(ev, () => prefetch(full[0])));
     // The PDF holds every image on the board, grouped and captioned the same way,
-    // laid out as a plain grid. Featured images print larger. Photo boards print from JPEG copies:
-    // the browser re-encodes WebP into the PDF uncompressed, but copies a JPEG in as it is.
+    // laid out as a plain grid. Featured images print larger. Each image prints from its psrc file:
+    // sheets and charts as lossless PNG, photos as JPEG sized to their box (the browser copies a JPEG
+    // into the PDF as it is but stores WebP uncompressed). The portfolio PDF limit is 6 MB.
     const pr = document.createElement('div');
     pr.className = 'print-board';
     pr.innerHTML = data.groups.map(g => {
       const figs = g.items.map(t => t.ph
         ? `<figure class="ph"><span>${esc(t.alt)}</span></figure>`
-        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.video ? t.poster : data.printJpg ? t.src.replace(/\.webp$/, '-print.jpg') : t.src}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
+        : `<figure class="${t.print ? (t.pwide ? 'feat wide' : 'feat') : ''}"><img data-psrc="${t.psrc || (t.video ? t.poster : t.src)}" alt="${esc(t.alt)}"><figcaption>${t.cap}</figcaption></figure>`).join('');
       const single = g.items.length === 1;
       return `<section class="pgroup${single ? ' single' : ''}">${data.groups.length > 1 || g.cap ? `<p class="pgroup-cap"><b>${g.label}.</b> ${g.cap}</p>` : ''}<div class="pgrid">${figs}</div></section>`;
     }).join('');
@@ -772,6 +774,12 @@ function galleries() {
       fr.style.height = (tall ? H : fitW * ar) + 'px';
     });
   };
+  // a slide's file loads when it comes within three places of the one in view (the one in view first),
+  // so opening a gallery does not download every full-size file in it
+  const near = c => [0, 1, -1, 2, -2, 3, -3].forEach(o => {
+    const s = slides[c + o], im = s && s.querySelector('img[data-src]');
+    if (im) { im.fetchPriority = o ? 'low' : 'high'; im.src = im.dataset.src; im.removeAttribute('data-src'); }
+  });
   const paint = () => {
     track.style.transform = `translate3d(${-x}px,0,0)`;
     const f = x / stepW;
@@ -784,7 +792,7 @@ function galleries() {
     }
     const now = Math.round(f);
     if (now !== shown) {
-      shown = now;
+      shown = now; near(now);
       slides.forEach((s, i) => { s.classList.toggle('active', i === now); const v = s.querySelector('video'); if (v) { if (i !== now) v.pause(); else if (!reduce) { v.muted = true; v.loop = true; v.play().catch(() => {}); } } });
       const t = items[now]; if (t) { cap.textContent = t.cap; grp.textContent = t.group; count.textContent = `${now + 1} / ${items.length}`; }
       syncFull();
@@ -807,7 +815,7 @@ function galleries() {
     items = flat(key); cur = Math.max(0, Math.min(items.length - 1, i));
     document.querySelectorAll('.board video').forEach(v => v.pause());
     ttl.textContent = G[key].title;
-    track.innerHTML = items.map(t => `<figure class="g-slide"><div class="g-frame${t.video ? ' vid' : ''}">${t.video ? `<video src="${t.src}" poster="${t.poster}" controls playsinline preload="none" aria-label="${esc(t.alt)}"></video>` : `<img src="${t.src}" alt="${esc(t.alt)}" draggable="false">`}</div><span class="hint">Scroll for the full sheet</span></figure>`).join('');
+    track.innerHTML = items.map(t => `<figure class="g-slide"><div class="g-frame${t.video ? ' vid' : ''}">${t.video ? `<video src="${t.src}" poster="${t.poster}" controls playsinline preload="none" aria-label="${esc(t.alt)}"></video>` : `<img data-src="${t.src}" alt="${esc(t.alt)}" draggable="false">`}</div><span class="hint">Scroll for the full sheet</span></figure>`).join('');
     slides = [...track.children];
     lastFocus = document.activeElement;
     const sbw = innerWidth - document.documentElement.clientWidth;
@@ -959,11 +967,11 @@ function motion() {
 }
 
 motion(); ascii(); cites(); galleries();
-// The PDF copy of each board uses full-size images. Loading them with the page made phones decode
-// every full-size file for small tiles, so they load after the page on desktop, and on print anywhere.
-// the timed desktop load asks for low priority, so it never slows the photos a visitor is looking at
+// The PDF copy of each board, and the resume, use their own files (psrc), sized for the page. Visitors never download them:
+// they load when someone prints, and with ?pdf in the address they load after the page, so an exported PDF
+// is never missing an image.
 const printImgs = low => document.querySelectorAll('img[data-psrc]').forEach(i => { if (low === true) i.fetchPriority = 'low'; i.src = i.dataset.psrc; i.removeAttribute('data-psrc'); });
 addEventListener('beforeprint', printImgs);
 if (matchMedia('print').addEventListener) matchMedia('print').addEventListener('change', e => { if (e.matches) printImgs(); });
-addEventListener('load', () => { if (innerWidth >= 760) setTimeout(() => printImgs(true), 1500); });
+if (/[?&]pdf\b/.test(location.search)) addEventListener('load', () => printImgs(true));
 })();
