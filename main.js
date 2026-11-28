@@ -586,7 +586,8 @@ function galleries() {
     const fetched = new Set();
     const prefetch = t => { if (!t || t.video || fetched.has(t.src)) return; fetched.add(t.src); const im = new Image(); im.decoding = 'async'; im.src = t.src; };
     const near = e => { const t = e.target.closest('.tile[data-i]'); if (t) prefetch(full[+t.dataset.i]); };
-    track.addEventListener('pointerover', near); track.addEventListener('focusin', near);
+    // only a moving pointer counts: tiles sliding under a still pointer while the page scrolls are not a hover
+    track.addEventListener('pointermove', near, { passive: true }); track.addEventListener('focusin', near);
     const openBtn = board.querySelector('[data-open]');
     ['pointerenter', 'focus'].forEach(ev => openBtn.addEventListener(ev, () => prefetch(full[0])));
     // The PDF shows each board's four ranked images (print: 1-4), two to a row, captioned as on the site.

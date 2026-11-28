@@ -11,11 +11,11 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="img/favicon-192.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20261127d">
+<link rel="stylesheet" href="style.css?v=20261127e">
 </head>
 <body>
 <canvas id="stars" aria-hidden="true"></canvas>
-<canvas id="space" aria-hidden="true"></canvas>
+<canvas id="space" width="0" height="0" aria-hidden="true"></canvas>
 <canvas id="astro" aria-hidden="true"></canvas>
 
 <header class="top wrap" id="site-top">
@@ -177,7 +177,7 @@
   <p class="sec-label">Resume</p>
   <div class="sec-main">
   <h2 id="resume-title" class="display">Resume</h2>
-    <div class="resume-img reveal"><img src="img/resume.svg" alt="One-page resume of Thomas (Mac) Doom" loading="lazy" width="1700" height="2200"><img class="print-only" data-psrc="img/resume-print.png" alt="" width="1700" height="2200"></div>
+    <div class="resume-img reveal"><img src="img/resume.webp" alt="One-page resume of Thomas (Mac) Doom" loading="lazy" decoding="async" width="1700" height="2200"><img class="print-only" data-psrc="img/resume-print.png" alt="" width="1700" height="2200"></div>
     <p style="margin-top:16px"><a class="link" href="mac-doom-resume.pdf" download="Thomas (Mac) Doom - Resume.pdf">Download the PDF</a></p>
   </div>
 </section>
@@ -356,6 +356,8 @@ window.GALLERIES =
         "items": [
           {
             "src": "img/system-overview.webp",
+            "thumb": "img/system-overview-sm.webp",
+            "tw": 510,
             "cap": "System overview: every component with power, mass, size and readiness level. 171.5 kg, 98% of the 175 kg limit.",
             "alt": "System overview",
             "ar": "1476/2088",
@@ -370,6 +372,8 @@ window.GALLERIES =
           },
           {
             "src": "img/component-status.webp",
+            "thumb": "img/component-status-sm.webp",
+            "tw": 920,
             "cap": "Which components run in each of the 13 operating modes.",
             "alt": "Which components run in each of the 13 operating modes.",
             "ar": "2884/1866",
@@ -384,6 +388,8 @@ window.GALLERIES =
           },
           {
             "src": "img/sheet-max-power.webp",
+            "thumb": "img/sheet-max-power-sm.webp",
+            "tw": 810,
             "cap": "Maximum power draw of each component in each operating mode.",
             "alt": "Maximum power draw of each component in each operating mode.",
             "ar": "2320/1932",
@@ -398,6 +404,8 @@ window.GALLERIES =
           },
           {
             "src": "img/sheet-mode-per-sol.webp",
+            "thumb": "img/sheet-mode-per-sol-sm.webp",
+            "tw": 830,
             "cap": "Day-by-day operating mode status, from landing through both cave visits.",
             "alt": "Day-by-day operating mode status, from landing through both cave visits.",
             "ar": "2280/1816",
@@ -412,6 +420,8 @@ window.GALLERIES =
           },
           {
             "src": "img/cave-cycle.webp",
+            "thumb": "img/cave-cycle-sm.webp",
+            "tw": 940,
             "cap": "The cave visit needs 6,684 Wh. At 70% depth of discharge that requires 9,549 Wh, so I chose 10,000 Wh.",
             "alt": "The cave visit needs 6,684 Wh. At 70% depth of discharge that requires 9,549 Wh, so I chose 10,000 Wh.",
             "ar": "1520/779",
@@ -426,6 +436,8 @@ window.GALLERIES =
           },
           {
             "src": "img/sheet-mission-timeline.webp",
+            "thumb": "img/sheet-mission-timeline-sm.webp",
+            "tw": 940,
             "psrc": "img/sheet-mission-timeline-print.png",
             "cap": "Power draw per sol: the phase and the power each operating mode draws, sol by sol.",
             "alt": "Power draw per sol",
@@ -442,6 +454,8 @@ window.GALLERIES =
           },
           {
             "src": "img/soc-chart.webp",
+            "thumb": "img/soc-chart-sm.webp",
+            "tw": 460,
             "cap": "Power used each sol and battery charge across the 47-sol mission. The dips are the two cave visits.",
             "alt": "Power used each sol and battery charge across the 47-sol mission",
             "ar": "932/574",
@@ -457,6 +471,8 @@ window.GALLERIES =
           },
           {
             "src": "img/chart-power-vs-time-area.webp",
+            "thumb": "img/chart-power-vs-time-area-sm.webp",
+            "tw": 410,
             "cap": "Battery energy and net energy per sol across the mission.",
             "alt": "Battery energy and net energy per sol across the mission",
             "ar": "932/573",
@@ -472,6 +488,8 @@ window.GALLERIES =
           },
           {
             "src": "img/chart-max-power-stacked.webp",
+            "thumb": "img/chart-max-power-stacked-sm.webp",
+            "tw": 420,
             "psrc": "img/chart-max-power-stacked-print.png",
             "cap": "Power draw by component, stacked for each operating mode.",
             "alt": "Power draw by component, stacked for each operating mode",
@@ -489,6 +507,8 @@ window.GALLERIES =
           },
           {
             "src": "img/consumption-by-mode.webp",
+            "thumb": "img/consumption-by-mode-sm.webp",
+            "tw": 370,
             "cap": "Total power consumption in each of the 13 operating modes.",
             "alt": "Total power consumption in each of the 13 operating modes",
             "ar": "773/443",
@@ -526,6 +546,8 @@ window.GALLERIES =
           },
           {
             "src": "img/generation-trade.webp",
+            "thumb": "img/generation-trade-sm.webp",
+            "tw": 1110,
             "cap": "Generation trade: a fixed array, a retractable tracking array and a single-axis tracking array.",
             "alt": "Generation trade: a fixed array, a retractable tracking array and a single-axis tracking array",
             "ar": "1638/1174",
@@ -540,6 +562,8 @@ window.GALLERIES =
           },
           {
             "src": "img/sheet-battery-chemistry.webp",
+            "thumb": "img/sheet-battery-chemistry-sm.webp",
+            "tw": 1190,
             "psrc": "img/sheet-battery-chemistry-print.png",
             "cap": "Battery chemistry trade study: lithium-ion, lithium-sulfur and solid-state.",
             "alt": "Battery chemistry trade study: lithium-ion, lithium-sulfur and solid-state",
@@ -564,6 +588,8 @@ window.GALLERIES =
         "items": [
           {
             "src": "img/power-architecture.webp",
+            "thumb": "img/power-architecture-sm.webp",
+            "tw": 1110,
             "cap": "Power architecture: solar arrays, a 10,000 Wh battery and a dual bus to every subsystem.",
             "alt": "Power architecture block diagram",
             "ar": "2048/836",
@@ -577,6 +603,8 @@ window.GALLERIES =
           },
           {
             "src": "img/n2-chart.webp",
+            "thumb": "img/n2-chart-sm.webp",
+            "tw": 620,
             "cap": "N² chart of the interfaces between subsystems.",
             "alt": "N-squared interface chart",
             "ar": "1/1",
@@ -1049,9 +1077,9 @@ window.GALLERIES =
   }
 };
 </script>
-<script src="refs.js?v=20261127d"></script>
-<script src="ascii-src.js?v=20261127d"></script>
-<script src="main.js?v=20261127d"></script>
-<script src="cursor.js?v=20261127d"></script>
+<script src="refs.js?v=20261127e"></script>
+<script src="ascii-src.js?v=20261127e"></script>
+<script src="main.js?v=20261127e"></script>
+<script src="cursor.js?v=20261127e"></script>
 </body>
 </html>
