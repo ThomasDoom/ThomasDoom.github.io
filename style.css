@@ -594,7 +594,6 @@ html.locked{overflow:hidden}
   #path{break-before:page !important;margin-top:0 !important}
   #path .sec-intro{break-after:avoid}
   #path .map{break-inside:avoid}
-  .reqs{break-before:page}
   .reqs .h-sub{margin-top:0}
   .reqs .h-sub,.reqs-intro,.plan-head{break-after:avoid}
   .plan-head + .plan-row{break-before:avoid}
@@ -609,7 +608,7 @@ html.locked{overflow:hidden}
   .seek-actions a,#resume a.link{color:var(--deep) !important;text-decoration:underline}
   .foot{display:block !important;margin-top:14pt;font-size:8.5pt;color:#555}
   .foot span{display:block}
-  #ref-list a{color:var(--deep);word-break:break-all}
+  #ref-list a{color:var(--deep);overflow-wrap:anywhere}
   a.cite{color:var(--deep) !important}
 }
 
@@ -647,3 +646,39 @@ body.kc-native #kc-dot,body.kc-native #kc-disc,body.kc-out #kc-dot,body.kc-out #
 [data-hover]{will-change:transform}
 [data-hover]>[data-hover-bounds]{position:absolute;inset:-10px -14px}
 .btn.kc-held{background:#2c5f5b}                          /* darker shade of --deep while the cursor holds it */
+
+/* pathway: one timeline from now to the long-term goal; requirements on every step, my plan where I have one */
+.pa{list-style:none;margin:26px 0 0;padding:0}
+.pa > li{display:grid;grid-template-columns:var(--pk,190px) minmax(0,1fr);gap:var(--gap);position:relative}
+.pa-when{color:var(--deep);font-weight:600;font-size:15px;padding-top:3px}
+.pa-body{position:relative;padding:0 0 40px 34px}
+.pa > li:last-child .pa-body{padding-bottom:0}
+.pa-body::before{content:"";position:absolute;left:7px;top:6px;bottom:-6px;width:2px;background:var(--band)}
+.pa > li:last-child .pa-body::before{display:none}
+.pa-body::after{content:"";position:absolute;left:0;top:5px;width:16px;height:16px;border-radius:50%;box-sizing:border-box;background:var(--paper);border:2px solid var(--teal)}
+.pa > li.goal .pa-body::after{border-color:var(--deep);background:var(--deep)}
+.pa-t{font-size:19px;font-weight:600;color:var(--ink);line-height:1.35;margin:0 0 10px}
+.pa ul{list-style:none;margin:0;padding:0;max-width:72ch}
+.pa ul li{color:var(--body);font-size:15.5px;line-height:1.6;margin:0 0 8px}
+.pa ul li b{color:var(--ink);font-weight:600}
+@media screen and (max-width:760px){
+  .pa > li{grid-template-columns:1fr;row-gap:0}
+  .pa-when{padding:0 0 4px 34px}
+  .pa-body::before{top:-22px}
+  .pa > li:first-child .pa-body::before{top:6px}
+  .pa-body::after{top:-21px}
+}
+@media print{
+  .research{break-inside:avoid}
+  .pa{margin-top:6pt}
+  .pa > li{--pk:1.25in;break-inside:avoid}
+  .pa-when{font-size:9.5pt;padding-top:1pt}
+  .pa-body{padding:0 0 10pt 18pt}
+  .pa-body::before{left:4pt;width:1.5pt;top:4pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pa-body::after{width:10pt;height:10pt;top:1.5pt;border-width:1.5pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pa-t{font-size:11pt;margin-bottom:3pt}
+  .pa ul li{font-size:9.5pt;line-height:1.4;margin-bottom:2pt}
+}
+
+.pa > li.now .pa-body::after{background:var(--teal);border-color:var(--teal)}
+.pa ul li.plan b{color:var(--deep)}

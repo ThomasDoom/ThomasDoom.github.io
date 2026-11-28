@@ -503,7 +503,7 @@ function cites() {
     const prev = el.previousSibling; if (prev && prev.nodeType === 1 && prev.classList.contains('cite')) el.classList.add('next');
   });
   const list = document.getElementById('ref-list');
-  if (list) list.innerHTML = order.map((k, i) => { const r = R[k]; return `<li id="ref-${i + 1}">${r[0]}${r[2] ? ` <a href="${r[2]}">${r[2]}</a>` : ''}</li>`; }).join('');
+  if (list) list.innerHTML = order.map((k, i) => { const r = R[k]; return `<li id="ref-${i + 1}">${r[0]}${r[2] ? ` <a href="${r[2]}">${r[2].replace(/([/?=&])/g, '$1<wbr>').replace(/([.-])/g, '<wbr>$1')}</a>` : ''}</li>`; }).join('');
 
   const pop = document.createElement('div'); pop.className = 'pop'; pop.setAttribute('role', 'tooltip'); pop.id = 'cite-pop';
   document.body.appendChild(pop);
