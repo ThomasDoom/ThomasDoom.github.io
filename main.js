@@ -117,7 +117,7 @@ function ascii() {
   let capPx = FONT_PX, capFont = '', capHatch = [.3, .78];
   let sceneScale = 1, narrow = false, R = 95;
   let sceneL = 0, sceneW = 0, sceneH = 0;
-  let astBaseX = 0, astBaseY = 0, astW = 0, astH = 0, compX = 0, compY = 0, compA = .5;
+  let astBaseX = 0, astBaseY = 0, astW = 0, astH = 0, compX = 0, compY = 0, compK = .7, compA = .5;
   const mouse = { x: -999, y: -999, vx: 0, vy: 0, lt: 0 };
   let blast = null;
   const t0 = performance.now();
@@ -272,8 +272,8 @@ function ascii() {
     const cols = sec ? getComputedStyle(sec).gridTemplateColumns.trim().split(/\s+/).length : 1;
     if (cols > 1) {
       const left = sec.getBoundingClientRect().left + parseFloat(getComputedStyle(sec).paddingLeft);
-      compX = (left + main.getBoundingClientRect().left) / 2; compY = vh * .58; compA = .6;
-    } else { compX = vw - astW * .55 - 10; compY = vh * .7; compA = 0; }
+      compX = (left + main.getBoundingClientRect().left) / 2; compK = .58; compY = vh * compK; compA = .6;
+    } else { compX = vw - astW * .55 - 10; compK = .7; compY = vh * compK; compA = 0; }
   }
 
   let lastT = 0, lastScene = 0, sy = -1, sv = 0, prevTA = 1, fx = null, fy = 0, tilt = 0;
@@ -461,12 +461,14 @@ function ascii() {
     capImg = c;
     layout(); frame(performance.now(), true);
     if (!reduce) start();
-    let rt, lw = innerWidth; addEventListener('resize', () => {
+    const coarse = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    let rt, lw = innerWidth, lh = innerHeight; addEventListener('resize', () => {
       clearTimeout(rt);
       rt = setTimeout(() => {
-        // a phone's address bar changes only the height: move the resting spot, keep the scene
-        if (innerWidth === lw && innerWidth < 1100) { vh = innerHeight; compY = vh * .7; return; }
-        lw = innerWidth; layout(); fx = null; frame(performance.now(), true);
+        // a phone's or tablet's address bar changes only the height, by less than 160px: move the resting spot,
+        // keep the scene. Rebuilding it then would stall the scroll for a moment
+        if (innerWidth === lw && (innerWidth < 1100 || (coarse && Math.abs(innerHeight - lh) < 160))) { vh = innerHeight; compY = vh * compK; return; }
+        lw = innerWidth; lh = innerHeight; layout(); fx = null; frame(performance.now(), true);
       }, 150);
     });
     addEventListener('scroll', () => { if (reduce) frame(performance.now(), true); }, { passive: true });
@@ -634,11 +636,14 @@ function galleries() {
     const chips = [...chipsEl.querySelectorAll('.chip')];
 
     // the track bleeds to the window edges; padding lines the first panel up with the column
-    let mode = 'native', dist = 0, stickTop = 0, colW = 0, stickH = 0, pinY = 0, offsets = [0], ticking = false, lastW = 0;
+    let mode = 'native', dist = 0, stickTop = 0, colW = 0, stickH = 0, pinY = 0, offsets = [0], ticking = false, lastW = 0, lastH = 0;
     // scroll-driven CSS animation moves the track on the compositor, in step with the scroll; JS is the fallback
     const sda = !!(window.CSS && CSS.supports && CSS.supports('animation-timeline: view()') && CSS.supports('view-timeline-inset: 10px'));
-    const layoutBoard = () => {
-      lastW = innerWidth;
+    // keep: a small height change (an address bar sliding in or out) keeps the board pinned or not pinned as it is.
+    // Switching would change the page height by thousands of pixels and make the page jump under the reader
+    const layoutBoard = keep => {
+      const prev = mode;
+      lastW = innerWidth; lastH = innerHeight;
       const r = board.getBoundingClientRect();
       track.style.setProperty('--bl', r.left + 'px'); track.style.setProperty('--br', Math.max(0, document.documentElement.clientWidth - r.right) + 'px');
       track.style.transform = ''; board.classList.remove('pinned', 'sda'); pin.style.height = ''; stick.style.top = '';
@@ -651,7 +656,8 @@ function galleries() {
       dist = Math.max(0, offsets[offsets.length - 1] + last.offsetWidth - colW);
       stickH = stick.offsetHeight;
       stickTop = Math.max(66, (innerHeight - stickH) / 2 + 16);
-      mode = innerWidth >= 1100 && dist > 0 && stickTop + stickH <= innerHeight - 8 ? 'pin' : 'native';
+      const fits = innerWidth >= 1100 && dist > 0 && stickTop + stickH <= innerHeight - 8;
+      mode = keep === true ? (prev === 'pin' && innerWidth >= 1100 && dist > 0 ? 'pin' : 'native') : fits ? 'pin' : 'native';
       if (mode === 'pin') {
         board.classList.add('pinned'); pin.style.height = (stickH + dist) + 'px'; stick.style.top = stickTop + 'px';
         pinY = pin.getBoundingClientRect().top + scrollY;
@@ -681,13 +687,22 @@ function galleries() {
     const kick = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
     addEventListener('scroll', () => { if (mode === 'pin') kick(); }, { passive: true });
     track.addEventListener('scroll', kick, { passive: true });
-    // phones change height when the address bar shows or hides; only a width change needs a new layout there
-    let rt; addEventListener('resize', () => { if (innerWidth === lastW && innerWidth < 1100) return; clearTimeout(rt); rt = setTimeout(layoutBoard, 120); });
+    // phones and tablets change height when the address bar shows or hides, while the reader scrolls. Nothing
+    // needs a new layout then: the panels are sized in svh, which ignores the address bar. On other screens a
+    // small height change measures again but keeps the board's mode (see layoutBoard)
+    const coarse = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    let rt; addEventListener('resize', () => {
+      if (innerWidth === lastW && (innerWidth < 1100 || (coarse && Math.abs(innerHeight - lastH) < 160))) return;
+      const small = innerWidth === lastW && Math.abs(innerHeight - lastH) < 160;
+      clearTimeout(rt); rt = setTimeout(() => layoutBoard(small), 120);
+    });
     addEventListener('load', layoutBoard);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(layoutBoard);
     // content above the board can change height (fonts, images); keep the pinned range in step
     if (window.ResizeObserver) { let rh; new ResizeObserver(() => { clearTimeout(rh); rh = setTimeout(() => { if (mode === 'pin') pinY = pin.getBoundingClientRect().top + scrollY; }, 100); }).observe(document.body); }
     layoutBoard();
+    // the scroll range over which a pinned board slides, read live; keepPlace uses it to hold the reader's spot on a resize
+    board._range = () => mode === 'pin' ? { start: pin.getBoundingClientRect().top + scrollY - stickTop, len: dist } : null;
 
     const goTo = i => {
       const x = Math.min(offsets[i], mode === 'pin' ? dist : Infinity);
@@ -966,7 +981,50 @@ function motion() {
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
 }
 
-motion(); ascii(); cites(); galleries();
+// Keep the reader's place when the window is resized. A new width makes the pinned boards lay out again
+// at new heights, so the page above can grow or shrink by thousands of pixels, and the browser's own scroll
+// anchoring skips pinned content. So the page keeps a note of what sits 40% down the window (or how far along
+// a pinned board the reader is), taken while scrolling, before any resize; once the boards have laid out
+// again it puts that back in the same spot.
+function keepPlace() {
+  let mark = null, resizing = false, t, st;
+  const note = () => {
+    const el = document.elementFromPoint(innerWidth / 2, innerHeight * .4);
+    const board = el && el.closest('.board');
+    const r = board && board._range && board._range();
+    if (r && scrollY >= r.start - 1 && scrollY <= r.start + r.len + 1) return { board, f: r.len ? (scrollY - r.start) / r.len : 0 };
+    // a tile inside a board moves with the board's own layout, so a board that is not sliding is held by its top
+    const a = board || (el && (el.closest('p, li, h2, h3, h4, figure, tr, header, article, section') || el));
+    return a ? { el: a, top: a.getBoundingClientRect().top } : null;
+  };
+  const restore = m => {
+    if (!m) return;
+    if (m.board) {
+      const r = m.board._range();
+      // still pinned: the same point along the slide. No longer pinned (the window got narrow): the board near the top
+      scrollTo({ top: r ? r.start + m.f * r.len : m.board.getBoundingClientRect().top + scrollY - innerHeight * .15, behavior: 'instant' });
+      return;
+    }
+    if (!m.el.isConnected) return;
+    const d = m.el.getBoundingClientRect().top - m.top;
+    if (Math.abs(d) > 1) scrollBy({ top: d, behavior: 'instant' });
+  };
+  addEventListener('scroll', () => { if (resizing) return; clearTimeout(st); st = setTimeout(() => { mark = note(); }, 150); }, { passive: true });
+  addEventListener('load', () => { mark = note(); });
+  // on a touch screen an address bar sliding in or out (same width, under 160px of height) happens while the
+  // reader is scrolling, so that is left alone. The boards lay out 120ms after the last resize event, so the
+  // place is put back after that
+  const coarse = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  let lw = innerWidth, lh = innerHeight;
+  addEventListener('resize', () => {
+    if (!resizing && innerWidth === lw && coarse && (innerWidth < 1100 || Math.abs(innerHeight - lh) < 160)) return;
+    if (!resizing) { resizing = true; clearTimeout(st); if (!mark) mark = note(); }
+    clearTimeout(t);
+    t = setTimeout(() => { restore(mark); lw = innerWidth; lh = innerHeight; resizing = false; mark = note(); }, 400);
+  });
+}
+
+motion(); ascii(); cites(); galleries(); keepPlace();
 // The PDF copy of each board, and the resume, use their own files (psrc), sized for the page. Visitors never download them:
 // they load when someone prints, and with ?pdf in the address they load after the page, so an exported PDF
 // is never missing an image.
