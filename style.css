@@ -555,10 +555,13 @@ html.locked{overflow:hidden}
   .exp-text h4{font-size:10.5pt;margin-bottom:2pt}
   .exp-text p{font-size:10.5pt !important;line-height:1.5 !important;max-width:none !important}
   .print-board{display:block;margin:2pt 0 8pt}
-  .pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10pt 12pt}
+  .pgroup{margin:0 0 10pt}
+  .pgcap{font-size:8.5pt;line-height:1.35;color:#3a3a3a;margin:0 0 4pt;break-after:avoid}
+  .pgcap b{color:var(--ink);font-weight:600}
+  .pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8pt 10pt;align-items:start}
   .pgrid.single{grid-template-columns:1fr}
   .pgrid figure{margin:0;break-inside:avoid;display:flex;flex-direction:column;gap:3pt}
-  .pgrid img{width:100%;height:2.6in;object-fit:contain;border:1px solid var(--band);border-radius:3pt;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgrid img{width:100%;height:1.6in;object-fit:contain;border:1px solid var(--band);border-radius:3pt;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pgrid.single img{height:3.4in}
   .pgrid figcaption{font-size:8pt;line-height:1.35;color:#3a3a3a}
   .print-figs figcaption{font-size:8.5pt;line-height:1.35;color:#3a3a3a}
