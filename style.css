@@ -17,6 +17,9 @@
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 body{margin:0;background:var(--paper);color:var(--body);font:16px/1.55 "Ysabeau",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+/* pinned boards slide wider than the window; Safari does not pass body's clip on to the page, so main clips them too.
+   clip (not hidden) keeps the boards' sticky pinning working */
+main{overflow-x:clip}
 img{display:block;max-width:100%;height:auto}
 a{color:inherit}
 h1,h2,h3,h4,p{margin:0}
@@ -24,7 +27,10 @@ h1,h2,h3,h4,p{margin:0}
 .wrap{width:100%;max-width:1440px;margin-inline:auto;padding-inline:var(--pad);position:relative;z-index:1}
 #stars{position:absolute;top:0;left:0;z-index:0;pointer-events:none}
 #space{position:absolute;top:0;left:0;z-index:0;pointer-events:none}
-#astro{position:fixed;left:0;top:0;z-index:0;pointer-events:none;transform-origin:50% 50%;will-change:transform,opacity}
+/* the astronaut floats inside a window-sized layer that clips it, so it can never widen the page (Safari counts
+   fixed elements that stick out past the screen) */
+.astro-layer{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+#astro{position:absolute;left:0;top:0;pointer-events:none;transform-origin:50% 50%;will-change:transform,opacity}
 
 /* Header */
 .top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-block:20px}
@@ -351,7 +357,7 @@ tbody tr:hover > *{background:var(--mist)}
 @media screen and (max-width:760px){.panel{width:calc(var(--pw) / 1000 * 96%)}.panel-canvas{border-radius:10px}}
 
 /* ================= Gallery overlay: page dims and blurs behind ================= */
-.gallery{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;color:#eef5f4;visibility:hidden;opacity:0;transition:opacity .4s ease,visibility 0s linear .4s}
+.gallery{position:fixed;inset:0;z-index:50;overflow:hidden;display:flex;flex-direction:column;color:#eef5f4;visibility:hidden;opacity:0;transition:opacity .4s ease,visibility 0s linear .4s}
 .gallery.on{visibility:visible;opacity:1;transition:opacity .4s ease}
 .gal-backdrop{position:absolute;inset:-80px;background:radial-gradient(120% 90% at 50% 45%,rgba(9,15,15,.7) 40%,rgba(9,15,15,.9));backdrop-filter:blur(24px) saturate(1.1);-webkit-backdrop-filter:blur(24px) saturate(1.1)}
 html.locked .blur{visibility:hidden}
@@ -516,7 +522,7 @@ html.locked{overflow:hidden}
 @media print{
   html,body{background:#fff !important}
   body{font-size:10.5pt;line-height:1.5;color:#262626}
-  .top,.blur,.gallery,.pop,#stars,#space,#astro,#kc-dot,#kc-disc,.board-track,.board-bar,.board-progress,.draft-note,.screen-only,.hover-hint,.sec-label,.req-n{display:none !important}
+  .top,.blur,.gallery,.pop,#stars,#space,#astro,.astro-layer,#kc-dot,#kc-disc,.board-track,.board-bar,.board-progress,.draft-note,.screen-only,.hover-hint,.sec-label,.req-n{display:none !important}
   .reveal,.display .w > span,.exp-head,.exp-head *{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
   .wrap{max-width:none !important;padding-inline:0 !important}
   .sec{display:block !important;padding:0 !important;margin:20pt 0 0 !important}
